@@ -25,8 +25,9 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .hdr p{font-size:11px;color:var(--green-l);margin-top:2px}
 .btn-refresh{margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:999px;padding:7px 13px;font-size:12px;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:5px;cursor:pointer}
 .btn-refresh:active{opacity:.8}
-.btn-refresh .ico{display:inline-block;transition:transform .5s}
-.btn-refresh.spin .ico{transform:rotate(360deg)}
+.btn-refresh.loading{opacity:.7;pointer-events:none}
+.btn-refresh .ico{display:inline-block}
+.btn-refresh.spin .ico{animation:spin .7s linear infinite}
 
 .body{padding:14px;max-width:520px;margin:0 auto}
 
@@ -40,7 +41,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .kpi .l{font-size:11.5px;color:var(--text-m);margin-top:5px;display:flex;align-items:center;justify-content:center;gap:3px}
 .kpi.total .n{color:var(--text)} .kpi.present .n{color:var(--green)}
 .kpi.leave .n{color:var(--blue)} .kpi.absent .n{color:var(--red)}
-.kpi.outp .n{color:var(--brown)}
+.kpi.outp .n{color:var(--brown)} .kpi.full8 .n{color:var(--green-d);font-size:20px}
 .kpi .tag-set{position:absolute;top:6px;right:7px;font-size:9px;color:var(--text-l);background:var(--cream2);border-radius:999px;padding:1px 6px}
 .forgot-bar{background:var(--orange-l);border:1px solid #FCD9B6;color:var(--orange);border-radius:12px;padding:9px 14px;font-size:12.5px;font-weight:600;text-align:center;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:6px}
 .hours-stat{background:var(--green-pale);border:1px solid var(--border);color:var(--green-d);border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;text-align:center;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:6px}
@@ -135,7 +136,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 </div>
 
 <div class="body" id="body" style="display:none">
-  <p class="kpi-hint">แตะ <b>ลา / ขาด / ต่างจังหวัด</b> เพื่อตั้งสถานะหลายคน · แตะ <b>เข้างาน</b> เพื่อกรองรายชื่อ</p>
+  <p class="kpi-hint">แตะการ์ดด้านบนเพื่อกรองรายชื่อ · ตั้งสถานะ (ลา/ขาด/ต่างจังหวัด) แตะที่ชื่อแต่ละคน</p>
   <div class="kpi-grid" id="kpi"></div>
   <div class="hours-stat" id="hours-stat" style="display:none"></div>
   <div class="forgot-bar" id="forgot-bar" style="display:none"></div>
@@ -191,13 +192,14 @@ async function init(){
 
 async function load(isRefresh){
   const rb = document.getElementById('btn-refresh');
-  if(isRefresh) rb.classList.add('spin');
+  if(isRefresh){ rb.classList.add('spin','loading'); }
   try{
-    const res = await fetch(GAS_URL + '?action=getAttendanceSummary&userId=' + encodeURIComponent(ADMIN_UID));
+    const res = await fetch(GAS_URL + '?action=getAttendanceSummary&userId=' + encodeURIComponent(ADMIN_UID) + '&t=' + Date.now());
     const d = await res.json();
     if(!d.success){
       const msg = d.error==='unauthorized' ? 'หน้านี้สำหรับแอดมินเท่านั้น' : (d.error||'เกิดข้อผิดพลาด');
-      document.getElementById('load').innerHTML = '<p style="color:var(--red);text-align:center;padding:0 30px">'+esc(msg)+'</p>';
+      if(!isRefresh) document.getElementById('load').innerHTML = '<p style="color:var(--red);text-align:center;padding:0 30px">'+esc(msg)+'</p>';
+      else toast(msg);
       return;
     }
     DATA = d;
@@ -205,11 +207,12 @@ async function load(isRefresh){
     document.getElementById('load').style.display = 'none';
     document.getElementById('body').style.display = 'block';
     render();
+    if(isRefresh) toast('อัปเดตแล้ว');
   }catch(e){
     if(!isRefresh) document.getElementById('load').innerHTML = '<p style="color:var(--red)">เชื่อมต่อไม่ได้</p>';
     else toast('โหลดไม่สำเร็จ');
   }finally{
-    if(isRefresh) setTimeout(()=>rb.classList.remove('spin'),500);
+    if(isRefresh) rb.classList.remove('spin','loading');
   }
 }
 
@@ -218,15 +221,15 @@ function render(){ renderKpi(); renderList(); }
 function renderKpi(){
   const c = DATA.counts;
   const cards = [
-    { f:'all',         cls:'total',   n:c.total,       label:'👥 ทั้งหมด',   set:false },
-    { f:'present',     cls:'present', n:c.present,     label:'🟢 เข้างาน',   set:false },
-    { f:'leave',       cls:'leave',   n:c.leave,       label:'📋 ลา',        set:true  },
-    { f:'absent',      cls:'absent',  n:c.absent,      label:'🔴 ขาด',       set:true  },
-    { f:'outprovince', cls:'outp',    n:c.outprovince, label:'🚚 ต่างจังหวัด', set:true },
+    { f:'all',         cls:'total',   n:c.total,       label:'👥 ทั้งหมด' },
+    { f:'present',     cls:'present', n:c.present,     label:'🟢 เข้างาน' },
+    { f:'leave',       cls:'leave',   n:c.leave,       label:'📋 ลา' },
+    { f:'absent',      cls:'absent',  n:c.absent,      label:'🔴 ขาด' },
+    { f:'outprovince', cls:'outp',    n:c.outprovince, label:'🚚 ต่างจังหวัด' },
+    { f:'full8',       cls:'full8',   n:(c.full8||0)+'/'+c.total, label:'✅ ครบ 8 ชม.' },
   ];
   document.getElementById('kpi').innerHTML = cards.map(k =>
-    '<div class="kpi '+k.cls+(FILTER===k.f?' on':'')+'" onclick="kpiTap(\''+k.f+'\','+k.set+')">'
-    + (k.set ? '<span class="tag-set">ตั้ง</span>' : '')
+    '<div class="kpi '+k.cls+(FILTER===k.f?' on':'')+'" onclick="setFilter(FILTER===\''+k.f+'\'?\'all\':\''+k.f+'\')">'
     + '<div class="n">'+k.n+'</div><div class="l">'+k.label+'</div></div>'
   ).join('');
 
@@ -239,15 +242,8 @@ function renderKpi(){
   const hs = document.getElementById('hours-stat');
   if(c.totalHours != null && c.totalHours > 0){
     hs.style.display = 'flex';
-    hs.innerHTML = '⏱️ รวมชั่วโมงทำงานทั้งทีมวันนี้ <b>&nbsp;'+c.totalHours+'&nbsp;</b> ชม.';
+    hs.innerHTML = '⏱️ รวม <b>&nbsp;'+c.totalHours+'&nbsp;</b> ชม. · เฉลี่ย <b>&nbsp;'+(c.avgHours||0)+'&nbsp;</b> ชม./คน';
   }else hs.style.display = 'none';
-}
-
-function kpiTap(f, settable){
-  // KPI ที่ตั้งสถานะได้ → เปิด sheet เลือกหลายคน, อื่น ๆ → กรองรายชื่อ
-  if(settable){ const m = {leave:'leave',absent:'absent',outprovince:'outprovince'}[f];
-    openBulkSheet(SETTABLE.find(s=>s.key===m)); return; }
-  setFilter(FILTER===f ? 'all' : f);
 }
 
 function setFilter(f){ FILTER = f; render(); window.scrollTo({top:0,behavior:'smooth'}); }
@@ -255,12 +251,13 @@ function setFilter(f){ FILTER = f; render(); window.scrollTo({top:0,behavior:'sm
 function visibleDrivers(){
   if(FILTER==='all') return DATA.drivers;
   if(FILTER==='present') return DATA.drivers.filter(d=>d.status==='present'); // รวมลืมเช็คอิน
+  if(FILTER==='full8')   return DATA.drivers.filter(d=>parseFloat(d.hours)>=8);
   return DATA.drivers.filter(d=>d.status===FILTER);
 }
 
 function renderList(){
   const items = visibleDrivers();
-  const titleMap = { all:'รายชื่อทั้งหมด', present:'คนเข้างาน', leave:'คนลา', absent:'คนขาด', outprovince:'ไปต่างจังหวัด' };
+  const titleMap = { all:'รายชื่อทั้งหมด', present:'คนเข้างาน', leave:'คนลา', absent:'คนขาด', outprovince:'ไปต่างจังหวัด', full8:'คนทำงานครบ 8 ชม.' };
   document.getElementById('list-title').textContent = (titleMap[FILTER]||'รายชื่อ') + ' · ' + items.length + ' คน';
   document.getElementById('list-clear').classList.toggle('show', FILTER!=='all');
 
@@ -345,50 +342,6 @@ async function setOne(uid, statusTh){
 }
 
 /* ── Bottom sheet : ตั้งสถานะหลายคน (จาก KPI) ── */
-function openBulkSheet(s){
-  const keyMap = { leave:'ลา', absent:'ขาด', outprovince:'ไปต่างจังหวัด' };
-  const already = new Set(DATA.drivers.filter(d=>d.manual && d.status===s.key).map(d=>d.uid));
-  const selected = new Set(already);
-
-  function panel(){
-    let html = '<div class="sheet-grab"></div>'
-      + '<div class="sheet-title">'+s.em+' ตั้งสถานะ "'+s.th+'"</div>'
-      + '<div class="sheet-sub">แตะเลือกคนที่ '+s.th+' วันนี้ แล้วกดบันทึก</div>';
-    DATA.drivers.forEach(d=>{
-      const on = selected.has(d.uid);
-      const sub = (STATUS_META[d.forgot?'forgot':d.status].label);
-      html += '<div class="bulk-item'+(on?' on':'')+'" data-uid="'+esc(d.uid)+'">'
-            + '<div class="bulk-box">'+(on?'✓':'')+'</div>'
-            + '<div class="bulk-meta"><div class="n">'+esc(d.name||d.code)+'</div>'
-            + '<div class="s">'+esc(d.code)+' · '+esc(d.plate||'—')+' · ปัจจุบัน: '+sub+'</div></div></div>';
-    });
-    html += '<button class="sheet-save" id="bulk-save">บันทึก</button>'
-          + '<button class="sheet-cancel" onclick="closeSheet()">ยกเลิก</button>';
-    return html;
-  }
-  openSheet(panel());
-
-  // toggle
-  document.querySelectorAll('#sheet-panel .bulk-item').forEach(el=>{
-    el.onclick = ()=>{
-      const uid = el.dataset.uid;
-      if(selected.has(uid)){ selected.delete(uid); el.classList.remove('on'); el.querySelector('.bulk-box').textContent=''; }
-      else { selected.add(uid); el.classList.add('on'); el.querySelector('.bulk-box').textContent='✓'; }
-    };
-  });
-  document.getElementById('bulk-save').onclick = async ()=>{
-    const addUids = [...selected].filter(u=>!already.has(u));
-    const removeUids = [...already].filter(u=>!selected.has(u));
-    if(addUids.length===0 && removeUids.length===0){ closeSheet(); return; }
-    document.getElementById('bulk-save').disabled = true;
-    document.getElementById('bulk-save').textContent = 'กำลังบันทึก...';
-    const r = await post({ action:'setAttendanceStatusBatch', userId:ADMIN_UID, status:keyMap[s.key], addUids, removeUids });
-    closeSheet();
-    if(r && r.success){ toast('บันทึก '+(addUids.length)+' คน'); await load(false); }
-    else toast('ไม่สำเร็จ');
-  };
-}
-
 /* ── sheet utils ── */
 function openSheet(html){ document.getElementById('sheet-panel').innerHTML = html; document.getElementById('sheet').classList.add('show'); }
 function closeSheet(){ document.getElementById('sheet').classList.remove('show'); }
