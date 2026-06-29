@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>สรุปลงเวลาวันนี้ — SSB</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#4A7C3F;--green-d:#2d5a24;--green-l:#D6E8D0;--green-pale:#EEF7EB;
+  --brown:#8B7355;--cream:#F5F0E8;--cream2:#EDE7D9;--cream3:#FDFAF5;
+  --text:#2C3E1F;--text-m:#5C6B4A;--text-l:#8B9E7A;
+  --border:rgba(74,124,63,.18);--red:#DC2626;--red-l:#FEE2E2;
+  --orange:#EA580C;--orange-l:#FFF4E8;--blue:#1D4ED8;--blue-l:#E4ECFF;
+  --brown-l:#F1EBE2;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);min-height:100vh}
+
+.hdr{background:linear-gradient(135deg,var(--green-d),var(--green));padding:16px;position:sticky;top:0;z-index:10}
+.hdr-top{display:flex;align-items:center;gap:10px}
+.hdr-logo{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px}
+.hdr h1{font-size:17px;font-weight:600;color:#fff}
+.hdr p{font-size:11px;color:var(--green-l);margin-top:2px}
+.btn-refresh{margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:999px;padding:7px 13px;font-size:12px;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:5px;cursor:pointer}
+.btn-refresh:active{opacity:.8}
+.btn-refresh .ico{display:inline-block;transition:transform .5s}
+.btn-refresh.spin .ico{transform:rotate(360deg)}
+
+.body{padding:14px;max-width:520px;margin:0 auto}
+
+/* ── KPI ── */
+.kpi-hint{font-size:11.5px;color:var(--text-l);text-align:center;margin:2px 0 10px}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+.kpi{background:var(--cream3);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;transition:transform .08s,box-shadow .15s;position:relative}
+.kpi:active{transform:scale(.97)}
+.kpi.on{box-shadow:0 0 0 2px var(--green) inset}
+.kpi .n{font-size:24px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:11.5px;color:var(--text-m);margin-top:5px;display:flex;align-items:center;justify-content:center;gap:3px}
+.kpi.total .n{color:var(--text)} .kpi.present .n{color:var(--green)}
+.kpi.leave .n{color:var(--blue)} .kpi.absent .n{color:var(--red)}
+.kpi.outp .n{color:var(--brown)}
+.kpi .tag-set{position:absolute;top:6px;right:7px;font-size:9px;color:var(--text-l);background:var(--cream2);border-radius:999px;padding:1px 6px}
+.forgot-bar{background:var(--orange-l);border:1px solid #FCD9B6;color:var(--orange);border-radius:12px;padding:9px 14px;font-size:12.5px;font-weight:600;text-align:center;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:6px}
+
+/* ── รายชื่อ ── */
+.list-head{display:flex;align-items:center;justify-content:space-between;margin:0 2px 9px}
+.list-head .t{font-size:13px;font-weight:600;color:var(--brown);letter-spacing:.03em}
+.list-head .clear{font-size:12px;color:var(--green);background:none;border:none;font-family:inherit;font-weight:600;cursor:pointer;display:none}
+.list-head .clear.show{display:inline}
+
+.card{background:var(--cream3);border:1px solid var(--border);border-radius:14px;padding:12px 13px;margin-bottom:10px}
+.card-top{display:flex;align-items:flex-start;gap:10px}
+.idbox{flex-shrink:0;min-width:54px;text-align:center;background:var(--cream2);border-radius:9px;padding:5px 6px}
+.idbox .code{font-size:11px;font-weight:700;color:var(--green-d)}
+.idbox .plate{font-size:10px;color:var(--text-m);margin-top:1px;word-break:break-all}
+.who{flex:1;min-width:0}
+.who .name{font-size:14.5px;font-weight:600;color:var(--text)}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;border-radius:999px;padding:2px 9px;margin-top:4px}
+.b-present{background:var(--green-pale);color:var(--green-d)}
+.b-forgot{background:var(--orange-l);color:var(--orange)}
+.b-leave{background:var(--blue-l);color:var(--blue)}
+.b-outp{background:var(--brown-l);color:var(--brown)}
+.b-absent{background:var(--red-l);color:var(--red)}
+.times{display:flex;gap:14px;margin-top:9px;padding-top:9px;border-top:1px dashed var(--border)}
+.tcol .lbl{font-size:10px;color:var(--text-l)}
+.tcol .val{font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.tcol .val.in{color:var(--green)} .tcol .val.out{color:var(--orange)} .tcol .val.empty{color:var(--text-l);font-weight:400}
+.actions{display:flex;gap:8px;margin-top:11px}
+.actions a,.actions button{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12.5px;font-weight:600;font-family:inherit;border-radius:10px;padding:9px;cursor:pointer;text-decoration:none}
+.a-call{background:var(--green);color:#fff;border:none}
+.a-call.off{background:var(--cream2);color:var(--text-l);pointer-events:none}
+.a-status{background:var(--cream3);color:var(--text-m);border:1px solid var(--border)}
+.a-status:active,.a-call:active{opacity:.85}
+
+.empty{background:var(--cream3);border:1px dashed var(--border);border-radius:14px;padding:34px 18px;text-align:center;color:var(--text-l);font-size:13.5px}
+
+/* ── Loading / error ── */
+#load{position:fixed;inset:0;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:9000}
+.spinner{width:38px;height:38px;border-radius:50%;border:4px solid var(--green-l);border-top-color:var(--green);animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#load p{font-size:14px;color:var(--text-m)}
+
+/* ── Bottom sheet ── */
+#sheet{position:fixed;inset:0;z-index:9500;display:none}
+#sheet.show{display:block}
+.sheet-bg{position:absolute;inset:0;background:rgba(44,62,31,.45)}
+.sheet-panel{position:absolute;left:0;right:0;bottom:0;background:var(--cream3);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:82vh;overflow-y:auto;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-grab{width:42px;height:4px;background:var(--cream2);border-radius:99px;margin:0 auto 14px}
+.sheet-title{font-size:16px;font-weight:700;text-align:center;margin-bottom:3px}
+.sheet-sub{font-size:12.5px;color:var(--text-m);text-align:center;margin-bottom:16px}
+.opt{display:flex;align-items:center;gap:11px;width:100%;background:var(--cream);border:1px solid var(--border);border-radius:13px;padding:13px 15px;margin-bottom:9px;font-size:14.5px;font-weight:600;font-family:inherit;color:var(--text);cursor:pointer}
+.opt:active{opacity:.85}.opt .em{font-size:19px}
+.opt.cur{box-shadow:0 0 0 2px var(--green) inset}.opt .chk{margin-left:auto;color:var(--green);font-weight:700;display:none}
+.opt.cur .chk{display:inline}
+.opt.clear{color:var(--red)}
+/* bulk mode */
+.bulk-item{display:flex;align-items:center;gap:11px;width:100%;background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:11px 14px;margin-bottom:8px;cursor:pointer}
+.bulk-item:active{opacity:.85}
+.bulk-box{width:22px;height:22px;border-radius:7px;border:2px solid var(--text-l);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700}
+.bulk-item.on .bulk-box{background:var(--green);border-color:var(--green)}
+.bulk-meta{flex:1;min-width:0}.bulk-meta .n{font-size:14px;font-weight:600}
+.bulk-meta .s{font-size:11px;color:var(--text-l)}
+.sheet-save{width:100%;background:var(--green);color:#fff;border:none;border-radius:13px;padding:14px;font-size:15px;font-weight:700;font-family:inherit;margin-top:6px;cursor:pointer}
+.sheet-save:active{opacity:.9}
+.sheet-save:disabled{opacity:.5}
+.sheet-cancel{width:100%;background:none;border:none;color:var(--text-m);font-size:13.5px;font-family:inherit;padding:12px;margin-top:2px;cursor:pointer}
+
+/* ── Toast ── */
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--green-d);color:#fff;font-size:13.5px;font-weight:600;padding:11px 20px;border-radius:999px;z-index:9999;opacity:0;transition:.25s;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div id="load"><div class="spinner"></div><p>กำลังโหลดข้อมูล...</p></div>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="hdr-logo">🕐</div>
+    <div style="flex:1">
+      <h1>สรุปลงเวลาวันนี้</h1>
+      <p id="hdr-date">—</p>
+    </div>
+    <button class="btn-refresh" id="btn-refresh" onclick="load(true)"><span class="ico">🔄</span> รีเฟรช</button>
+  </div>
+</div>
+
+<div class="body" id="body" style="display:none">
+  <p class="kpi-hint">แตะ <b>ลา / ขาด / ต่างจังหวัด</b> เพื่อตั้งสถานะหลายคน · แตะ <b>เข้างาน</b> เพื่อกรองรายชื่อ</p>
+  <div class="kpi-grid" id="kpi"></div>
+  <div class="forgot-bar" id="forgot-bar" style="display:none"></div>
+
+  <div class="list-head">
+    <span class="t" id="list-title">รายชื่อทั้งหมด</span>
+    <button class="clear" id="list-clear" onclick="setFilter('all')">✕ ล้างตัวกรอง</button>
+  </div>
+  <div id="list"></div>
+</div>
+
+<div id="sheet"><div class="sheet-bg" onclick="closeSheet()"></div><div class="sheet-panel" id="sheet-panel"></div></div>
+<div id="toast"></div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjfBQUSYaTEdrxkdXUVN98G68XseCquhDeXfMgU8cVYaY/exec';
+// 🔧 ใส่ LIFF ID ของหน้านี้ (สร้างใหม่แล้วเอามาใส่ + เพิ่มคีย์ LIFF_ID_AttendSummary ในชีต LINE_OA ด้วย)
+const LIFF_ID = '2010274217-XXXXXXXX';
+
+const STATUS_META = {
+  present:    { label:'เข้างาน',        cls:'b-present', em:'🟢' },
+  forgot:     { label:'มา · ลืมเช็คอิน', cls:'b-forgot',  em:'⚠️' },
+  leave:      { label:'ลา',             cls:'b-leave',   em:'📋' },
+  outprovince:{ label:'ต่างจังหวัด',     cls:'b-outp',    em:'🚚' },
+  absent:     { label:'ขาด',            cls:'b-absent',  em:'🔴' },
+};
+// สถานะที่ตั้งเองได้ (ส่งไป backend เป็นภาษาไทย)
+const SETTABLE = [
+  { key:'leave',       th:'ลา',           em:'📋' },
+  { key:'absent',      th:'ขาด',          em:'🔴' },
+  { key:'outprovince', th:'ไปต่างจังหวัด', em:'🚚' },
+];
+
+let ADMIN_UID = '';
+let DATA = null;
+let FILTER = 'all';
+
+function esc(s){ const d=document.createElement('div'); d.textContent=(s==null)?'':String(s); return d.innerHTML; }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+
+async function init(){
+  try{
+    await liff.init({ liffId: LIFF_ID });
+    if(!liff.isLoggedIn()){ liff.login(); return; }
+    const p = await liff.getProfile();
+    ADMIN_UID = p.userId;
+    await load(false);
+  }catch(e){
+    document.getElementById('load').innerHTML =
+      '<p style="color:var(--red);padding:0 30px;text-align:center">เปิดผ่าน LINE เพื่อใช้งาน<br><span style="font-size:12px;color:var(--text-l)">'+esc(e.message||e)+'</span></p>';
+  }
+}
+
+async function load(isRefresh){
+  const rb = document.getElementById('btn-refresh');
+  if(isRefresh) rb.classList.add('spin');
+  try{
+    const res = await fetch(GAS_URL + '?action=getAttendanceSummary&userId=' + encodeURIComponent(ADMIN_UID));
+    const d = await res.json();
+    if(!d.success){
+      const msg = d.error==='unauthorized' ? 'หน้านี้สำหรับแอดมินเท่านั้น' : (d.error||'เกิดข้อผิดพลาด');
+      document.getElementById('load').innerHTML = '<p style="color:var(--red);text-align:center;padding:0 30px">'+esc(msg)+'</p>';
+      return;
+    }
+    DATA = d;
+    document.getElementById('hdr-date').textContent = 'ประจำวันที่ ' + esc(d.date);
+    document.getElementById('load').style.display = 'none';
+    document.getElementById('body').style.display = 'block';
+    render();
+  }catch(e){
+    if(!isRefresh) document.getElementById('load').innerHTML = '<p style="color:var(--red)">เชื่อมต่อไม่ได้</p>';
+    else toast('โหลดไม่สำเร็จ');
+  }finally{
+    if(isRefresh) setTimeout(()=>rb.classList.remove('spin'),500);
+  }
+}
+
+function render(){ renderKpi(); renderList(); }
+
+function renderKpi(){
+  const c = DATA.counts;
+  const cards = [
+    { f:'all',         cls:'total',   n:c.total,       label:'👥 ทั้งหมด',   set:false },
+    { f:'present',     cls:'present', n:c.present,     label:'🟢 เข้างาน',   set:false },
+    { f:'leave',       cls:'leave',   n:c.leave,       label:'📋 ลา',        set:true  },
+    { f:'absent',      cls:'absent',  n:c.absent,      label:'🔴 ขาด',       set:true  },
+    { f:'outprovince', cls:'outp',    n:c.outprovince, label:'🚚 ต่างจังหวัด', set:true },
+  ];
+  document.getElementById('kpi').innerHTML = cards.map(k =>
+    '<div class="kpi '+k.cls+(FILTER===k.f?' on':'')+'" onclick="kpiTap(\''+k.f+'\','+k.set+')">'
+    + (k.set ? '<span class="tag-set">ตั้ง</span>' : '')
+    + '<div class="n">'+k.n+'</div><div class="l">'+k.label+'</div></div>'
+  ).join('');
+
+  const fb = document.getElementById('forgot-bar');
+  if(c.forgot > 0){
+    fb.style.display = 'flex';
+    fb.innerHTML = '⚠️ มี <b>&nbsp;'+c.forgot+' คน&nbsp;</b> มาทำงานแต่ลืมเช็คอิน — แตะ "เข้างาน" เพื่อดู';
+  }else fb.style.display = 'none';
+}
+
+function kpiTap(f, settable){
+  // KPI ที่ตั้งสถานะได้ → เปิด sheet เลือกหลายคน, อื่น ๆ → กรองรายชื่อ
+  if(settable){ const m = {leave:'leave',absent:'absent',outprovince:'outprovince'}[f];
+    openBulkSheet(SETTABLE.find(s=>s.key===m)); return; }
+  setFilter(FILTER===f ? 'all' : f);
+}
+
+function setFilter(f){ FILTER = f; render(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+function visibleDrivers(){
+  if(FILTER==='all') return DATA.drivers;
+  if(FILTER==='present') return DATA.drivers.filter(d=>d.status==='present'); // รวมลืมเช็คอิน
+  return DATA.drivers.filter(d=>d.status===FILTER);
+}
+
+function renderList(){
+  const items = visibleDrivers();
+  const titleMap = { all:'รายชื่อทั้งหมด', present:'คนเข้างาน', leave:'คนลา', absent:'คนขาด', outprovince:'ไปต่างจังหวัด' };
+  document.getElementById('list-title').textContent = (titleMap[FILTER]||'รายชื่อ') + ' · ' + items.length + ' คน';
+  document.getElementById('list-clear').classList.toggle('show', FILTER!=='all');
+
+  if(items.length===0){
+    document.getElementById('list').innerHTML = '<div class="empty">ไม่มีรายชื่อในหมวดนี้</div>';
+    return;
+  }
+  document.getElementById('list').innerHTML = items.map(cardHtml).join('');
+}
+
+function cardHtml(d){
+  const sKey = d.forgot ? 'forgot' : d.status;
+  const meta = STATUS_META[sKey];
+  const phone = (d.phone||'').replace(/[^0-9+]/g,'');
+  const callCls = phone ? 'a-call' : 'a-call off';
+  const callTxt = phone ? '📞 โทร '+esc(d.phone) : '📞 ไม่มีเบอร์';
+  const inVal  = d.checkIn  ? '<span class="val in">'+esc(d.checkIn)+'</span>'   : '<span class="val empty">—</span>';
+  const outVal = d.checkOut ? '<span class="val out">'+esc(d.checkOut)+'</span>' : '<span class="val empty">—</span>';
+  const setTag = d.manual ? ' <span style="font-size:10px;color:var(--text-l)">(ตั้งเอง)</span>' : '';
+
+  return ''
+  + '<div class="card">'
+  +   '<div class="card-top">'
+  +     '<div class="idbox"><div class="code">'+esc(d.code||'—')+'</div><div class="plate">'+esc(d.plate||'—')+'</div></div>'
+  +     '<div class="who">'
+  +       '<div class="name">'+esc(d.name||'(ไม่มีชื่อ)')+'</div>'
+  +       '<span class="badge '+meta.cls+'">'+meta.em+' '+meta.label+setTag+'</span>'
+  +     '</div>'
+  +   '</div>'
+  +   '<div class="times">'
+  +     '<div class="tcol"><div class="lbl">เข้างาน</div>'+inVal+'</div>'
+  +     '<div class="tcol"><div class="lbl">ออกงาน</div>'+outVal+'</div>'
+  +     (d.hours ? '<div class="tcol"><div class="lbl">รวม (ชม.)</div><span class="val">'+esc(d.hours)+'</span></div>' : '')
+  +   '</div>'
+  +   '<div class="actions">'
+  +     '<a class="'+callCls+'" href="'+(phone?'tel:'+phone:'#')+'">'+callTxt+'</a>'
+  +     '<button class="a-status" onclick="openSingleSheet(\''+esc(d.uid)+'\')">⚙️ เปลี่ยนสถานะ</button>'
+  +   '</div>'
+  + '</div>';
+}
+
+/* ── Bottom sheet : เปลี่ยนสถานะคนเดียว ── */
+function openSingleSheet(uid){
+  const d = DATA.drivers.find(x=>x.uid===uid); if(!d) return;
+  const curManual = d.manual ? d.status : '';
+  let html = '<div class="sheet-grab"></div>'
+    + '<div class="sheet-title">'+esc(d.name||d.code)+'</div>'
+    + '<div class="sheet-sub">'+esc(d.code)+' · '+esc(d.plate||'—')+'</div>';
+  SETTABLE.forEach(s=>{
+    html += '<button class="opt'+(curManual===s.key?' cur':'')+'" onclick="setOne(\''+esc(uid)+'\',\''+s.th+'\')">'
+          + '<span class="em">'+s.em+'</span>'+s.th+'<span class="chk">✓</span></button>';
+  });
+  html += '<button class="opt clear" onclick="setOne(\''+esc(uid)+'\',\'clear\')">↩️ ล้างสถานะ (ใช้ค่าอัตโนมัติ)</button>'
+        + '<button class="sheet-cancel" onclick="closeSheet()">ยกเลิก</button>';
+  openSheet(html);
+}
+
+async function setOne(uid, statusTh){
+  closeSheet();
+  toast('กำลังบันทึก...');
+  const r = await post({ action:'setAttendanceStatus', userId:ADMIN_UID, targetUid:uid, status:statusTh });
+  if(r && r.success){ toast('บันทึกแล้ว'); await load(false); }
+  else toast('ไม่สำเร็จ: ' + ((r&&r.error)||'')); 
+}
+
+/* ── Bottom sheet : ตั้งสถานะหลายคน (จาก KPI) ── */
+function openBulkSheet(s){
+  const keyMap = { leave:'ลา', absent:'ขาด', outprovince:'ไปต่างจังหวัด' };
+  const already = new Set(DATA.drivers.filter(d=>d.manual && d.status===s.key).map(d=>d.uid));
+  const selected = new Set(already);
+
+  function panel(){
+    let html = '<div class="sheet-grab"></div>'
+      + '<div class="sheet-title">'+s.em+' ตั้งสถานะ "'+s.th+'"</div>'
+      + '<div class="sheet-sub">แตะเลือกคนที่ '+s.th+' วันนี้ แล้วกดบันทึก</div>';
+    DATA.drivers.forEach(d=>{
+      const on = selected.has(d.uid);
+      const sub = (STATUS_META[d.forgot?'forgot':d.status].label);
+      html += '<div class="bulk-item'+(on?' on':'')+'" data-uid="'+esc(d.uid)+'">'
+            + '<div class="bulk-box">'+(on?'✓':'')+'</div>'
+            + '<div class="bulk-meta"><div class="n">'+esc(d.name||d.code)+'</div>'
+            + '<div class="s">'+esc(d.code)+' · '+esc(d.plate||'—')+' · ปัจจุบัน: '+sub+'</div></div></div>';
+    });
+    html += '<button class="sheet-save" id="bulk-save">บันทึก</button>'
+          + '<button class="sheet-cancel" onclick="closeSheet()">ยกเลิก</button>';
+    return html;
+  }
+  openSheet(panel());
+
+  // toggle
+  document.querySelectorAll('#sheet-panel .bulk-item').forEach(el=>{
+    el.onclick = ()=>{
+      const uid = el.dataset.uid;
+      if(selected.has(uid)){ selected.delete(uid); el.classList.remove('on'); el.querySelector('.bulk-box').textContent=''; }
+      else { selected.add(uid); el.classList.add('on'); el.querySelector('.bulk-box').textContent='✓'; }
+    };
+  });
+  document.getElementById('bulk-save').onclick = async ()=>{
+    const addUids = [...selected].filter(u=>!already.has(u));
+    const removeUids = [...already].filter(u=>!selected.has(u));
+    if(addUids.length===0 && removeUids.length===0){ closeSheet(); return; }
+    document.getElementById('bulk-save').disabled = true;
+    document.getElementById('bulk-save').textContent = 'กำลังบันทึก...';
+    const r = await post({ action:'setAttendanceStatusBatch', userId:ADMIN_UID, status:keyMap[s.key], addUids, removeUids });
+    closeSheet();
+    if(r && r.success){ toast('บันทึก '+(addUids.length)+' คน'); await load(false); }
+    else toast('ไม่สำเร็จ');
+  };
+}
+
+/* ── sheet utils ── */
+function openSheet(html){ document.getElementById('sheet-panel').innerHTML = html; document.getElementById('sheet').classList.add('show'); }
+function closeSheet(){ document.getElementById('sheet').classList.remove('show'); }
+
+async function post(payload){
+  const res = await fetch(GAS_URL, {
+    method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}
+
+init();
+</script>
+</body>
+</html>
