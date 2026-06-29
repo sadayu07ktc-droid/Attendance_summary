@@ -50,29 +50,32 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .list-head .clear{font-size:12px;color:var(--green);background:none;border:none;font-family:inherit;font-weight:600;cursor:pointer;display:none}
 .list-head .clear.show{display:inline}
 
-.card{background:var(--cream3);border:1px solid var(--border);border-radius:14px;padding:12px 13px;margin-bottom:10px}
-.card-top{display:flex;align-items:flex-start;gap:10px}
-.idbox{flex-shrink:0;min-width:54px;text-align:center;background:var(--cream2);border-radius:9px;padding:5px 6px}
-.idbox .code{font-size:11px;font-weight:700;color:var(--green-d)}
-.idbox .plate{font-size:10px;color:var(--text-m);margin-top:1px;word-break:break-all}
-.who{flex:1;min-width:0}
-.who .name{font-size:14.5px;font-weight:600;color:var(--text)}
-.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;border-radius:999px;padding:2px 9px;margin-top:4px}
+.row{display:flex;align-items:center;gap:9px;background:var(--cream3);border:1px solid var(--border);border-radius:12px;padding:9px 10px;margin-bottom:7px}
+.row .idbox{flex-shrink:0;width:52px;text-align:center;background:var(--cream2);border-radius:8px;padding:4px 4px}
+.row .idbox .code{font-size:10.5px;font-weight:700;color:var(--green-d)}
+.row .idbox .plate{font-size:9px;color:var(--text-m);margin-top:1px;word-break:break-all;line-height:1.25}
+.row .mid{flex:1;min-width:0;cursor:pointer}
+.row .nm{font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .sub{display:flex;align-items:center;gap:7px;margin-top:3px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:700;border-radius:999px;padding:1px 7px}
 .b-present{background:var(--green-pale);color:var(--green-d)}
 .b-forgot{background:var(--orange-l);color:var(--orange)}
 .b-leave{background:var(--blue-l);color:var(--blue)}
 .b-outp{background:var(--brown-l);color:var(--brown)}
 .b-absent{background:var(--red-l);color:var(--red)}
-.times{display:flex;gap:14px;margin-top:9px;padding-top:9px;border-top:1px dashed var(--border)}
-.tcol .lbl{font-size:10px;color:var(--text-l)}
-.tcol .val{font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
-.tcol .val.in{color:var(--green)} .tcol .val.out{color:var(--orange)} .tcol .val.empty{color:var(--text-l);font-weight:400}
-.actions{display:flex;gap:8px;margin-top:11px}
-.actions a,.actions button{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12.5px;font-weight:600;font-family:inherit;border-radius:10px;padding:9px;cursor:pointer;text-decoration:none}
-.a-call{background:var(--green);color:#fff;border:none}
-.a-call.off{background:var(--cream2);color:var(--text-l);pointer-events:none}
-.a-status{background:var(--cream3);color:var(--text-m);border:1px solid var(--border)}
-.a-status:active,.a-call:active{opacity:.85}
+.veh{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--text-m);white-space:nowrap}
+.veh .dot{width:7px;height:7px;border-radius:50%;background:var(--text-l);flex-shrink:0}
+.veh.run .dot{background:#16A34A}.veh.idle .dot{background:var(--orange)}
+.veh.park .dot{background:#9CA3AF}.veh.off .dot{background:#6B7280}
+.veh.offline .dot{background:var(--red)}.veh.none .dot{background:#D9D4C8}
+.row .rt{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.row .io{font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;line-height:1.35}
+.row .io .i{color:var(--green);font-weight:700}.row .io .o{color:var(--orange);font-weight:700}.row .io .e{color:var(--text-l)}
+.row .ic{display:flex;gap:5px}
+.iconbtn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:14px;text-decoration:none;color:var(--text-m);cursor:pointer}
+.iconbtn.call{background:var(--green);color:#fff;border:none}
+.iconbtn.dis{opacity:.32;pointer-events:none}
+.iconbtn:active{opacity:.8}
 
 .empty{background:var(--cream3);border:1px dashed var(--border);border-radius:14px;padding:34px 18px;text-align:center;color:var(--text-l);font-size:13.5px}
 
@@ -255,36 +258,47 @@ function renderList(){
     document.getElementById('list').innerHTML = '<div class="empty">ไม่มีรายชื่อในหมวดนี้</div>';
     return;
   }
-  document.getElementById('list').innerHTML = items.map(cardHtml).join('');
+  document.getElementById('list').innerHTML = items.map(rowHtml).join('');
 }
 
-function cardHtml(d){
+const VEH_DOT = { run:'run', idle:'idle', park:'park', off:'off', offline:'offline', none:'none', other:'park' };
+
+function rowHtml(d){
   const sKey = d.forgot ? 'forgot' : d.status;
   const meta = STATUS_META[sKey];
   const phone = (d.phone||'').replace(/[^0-9+]/g,'');
-  const callCls = phone ? 'a-call' : 'a-call off';
-  const callTxt = phone ? '📞 โทร '+esc(d.phone) : '📞 ไม่มีเบอร์';
-  const inVal  = d.checkIn  ? '<span class="val in">'+esc(d.checkIn)+'</span>'   : '<span class="val empty">—</span>';
-  const outVal = d.checkOut ? '<span class="val out">'+esc(d.checkOut)+'</span>' : '<span class="val empty">—</span>';
-  const setTag = d.manual ? ' <span style="font-size:10px;color:var(--text-l)">(ตั้งเอง)</span>' : '';
+  const setTag = d.manual ? ' (ตั้งเอง)' : '';
+
+  // เวลาเข้า/ออก
+  const io = '<span class="'+(d.checkIn?'i':'e')+'">'+(d.checkIn||'—')+'</span>'
+           + ' <span class="e">/</span> '
+           + '<span class="'+(d.checkOut?'o':'e')+'">'+(d.checkOut||'—')+'</span>';
+
+  // สถานะรถ
+  const vcls = VEH_DOT[d.vehicleCode] || 'none';
+  const veh = '<span class="veh '+vcls+'"><span class="dot"></span>'+esc(d.vehicle||'—')+'</span>';
+
+  // ปุ่มพิกัด (เปิด Google Maps) + ปุ่มโทร
+  const mapBtn = d.gps
+    ? '<a class="iconbtn" href="https://maps.google.com/?q='+esc(d.gps)+'" target="_blank" rel="noopener" title="ดูพิกัด">📍</a>'
+    : '<span class="iconbtn dis" title="ไม่มีพิกัด">📍</span>';
+  const callBtn = phone
+    ? '<a class="iconbtn call" href="tel:'+phone+'" title="โทร">📞</a>'
+    : '<span class="iconbtn call dis" title="ไม่มีเบอร์">📞</span>';
 
   return ''
-  + '<div class="card">'
-  +   '<div class="card-top">'
-  +     '<div class="idbox"><div class="code">'+esc(d.code||'—')+'</div><div class="plate">'+esc(d.plate||'—')+'</div></div>'
-  +     '<div class="who">'
-  +       '<div class="name">'+esc(d.name||'(ไม่มีชื่อ)')+'</div>'
-  +       '<span class="badge '+meta.cls+'">'+meta.em+' '+meta.label+setTag+'</span>'
+  + '<div class="row">'
+  +   '<div class="idbox"><div class="code">'+esc(d.code||'—')+'</div><div class="plate">'+esc(d.plate||'—')+'</div></div>'
+  +   '<div class="mid" onclick="openSingleSheet(\''+esc(d.uid)+'\')">'
+  +     '<div class="nm">'+esc(d.name||'(ไม่มีชื่อ)')+'</div>'
+  +     '<div class="sub">'
+  +       '<span class="badge '+meta.cls+'">'+meta.em+' '+meta.label+esc(setTag)+'</span>'
+  +       veh
   +     '</div>'
   +   '</div>'
-  +   '<div class="times">'
-  +     '<div class="tcol"><div class="lbl">เข้างาน</div>'+inVal+'</div>'
-  +     '<div class="tcol"><div class="lbl">ออกงาน</div>'+outVal+'</div>'
-  +     (d.hours ? '<div class="tcol"><div class="lbl">รวม (ชม.)</div><span class="val">'+esc(d.hours)+'</span></div>' : '')
-  +   '</div>'
-  +   '<div class="actions">'
-  +     '<a class="'+callCls+'" href="'+(phone?'tel:'+phone:'#')+'">'+callTxt+'</a>'
-  +     '<button class="a-status" onclick="openSingleSheet(\''+esc(d.uid)+'\')">⚙️ เปลี่ยนสถานะ</button>'
+  +   '<div class="rt">'
+  +     '<div class="io">'+io+'</div>'
+  +     '<div class="ic">'+mapBtn+callBtn+'</div>'
   +   '</div>'
   + '</div>';
 }
