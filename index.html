@@ -43,6 +43,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .kpi.outp .n{color:var(--brown)}
 .kpi .tag-set{position:absolute;top:6px;right:7px;font-size:9px;color:var(--text-l);background:var(--cream2);border-radius:999px;padding:1px 6px}
 .forgot-bar{background:var(--orange-l);border:1px solid #FCD9B6;color:var(--orange);border-radius:12px;padding:9px 14px;font-size:12.5px;font-weight:600;text-align:center;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:6px}
+.hours-stat{background:var(--green-pale);border:1px solid var(--border);color:var(--green-d);border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;text-align:center;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:6px}
+.hours-stat b{font-size:16px;font-weight:700}
 
 /* ── รายชื่อ ── */
 .list-head{display:flex;align-items:center;justify-content:space-between;margin:0 2px 9px}
@@ -71,6 +73,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .row .rt{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
 .row .io{font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;line-height:1.35}
 .row .io .i{color:var(--green);font-weight:700}.row .io .o{color:var(--orange);font-weight:700}.row .io .e{color:var(--text-l)}
+.row .io .hrs{font-size:10px;color:var(--text-m);font-weight:600;margin-top:1px}
 .row .ic{display:flex;gap:5px}
 .iconbtn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:14px;text-decoration:none;color:var(--text-m);cursor:pointer}
 .iconbtn.call{background:var(--green);color:#fff;border:none}
@@ -134,6 +137,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 <div class="body" id="body" style="display:none">
   <p class="kpi-hint">แตะ <b>ลา / ขาด / ต่างจังหวัด</b> เพื่อตั้งสถานะหลายคน · แตะ <b>เข้างาน</b> เพื่อกรองรายชื่อ</p>
   <div class="kpi-grid" id="kpi"></div>
+  <div class="hours-stat" id="hours-stat" style="display:none"></div>
   <div class="forgot-bar" id="forgot-bar" style="display:none"></div>
 
   <div class="list-head">
@@ -231,6 +235,12 @@ function renderKpi(){
     fb.style.display = 'flex';
     fb.innerHTML = '⚠️ มี <b>&nbsp;'+c.forgot+' คน&nbsp;</b> มาทำงานแต่ลืมเช็คอิน — แตะ "เข้างาน" เพื่อดู';
   }else fb.style.display = 'none';
+
+  const hs = document.getElementById('hours-stat');
+  if(c.totalHours != null && c.totalHours > 0){
+    hs.style.display = 'flex';
+    hs.innerHTML = '⏱️ รวมชั่วโมงทำงานทั้งทีมวันนี้ <b>&nbsp;'+c.totalHours+'&nbsp;</b> ชม.';
+  }else hs.style.display = 'none';
 }
 
 function kpiTap(f, settable){
@@ -267,12 +277,19 @@ function rowHtml(d){
   const sKey = d.forgot ? 'forgot' : d.status;
   const meta = STATUS_META[sKey];
   const phone = (d.phone||'').replace(/[^0-9+]/g,'');
-  const setTag = d.manual ? ' (ตั้งเอง)' : '';
+  const setTag = d.manual ? ' (ตั้งเอง)' : (d.autoUpc ? ' (GPS)' : '');
 
-  // เวลาเข้า/ออก
+  // ต่างจังหวัด → ต่อท้ายชื่อจังหวัด + ระยะ
+  let badgeTxt = meta.label + esc(setTag);
+  if(d.status==='outprovince' && d.prov){
+    badgeTxt += ' · ' + esc(d.prov) + (d.distKm!=null ? ' '+esc(d.distKm)+' กม.' : '');
+  }
+
+  // เวลาเข้า/ออก + รวมชั่วโมง
   const io = '<span class="'+(d.checkIn?'i':'e')+'">'+(d.checkIn||'—')+'</span>'
            + ' <span class="e">/</span> '
-           + '<span class="'+(d.checkOut?'o':'e')+'">'+(d.checkOut||'—')+'</span>';
+           + '<span class="'+(d.checkOut?'o':'e')+'">'+(d.checkOut||'—')+'</span>'
+           + (d.hours!=='' && d.hours!=null ? '<div class="hrs">รวม '+esc(d.hours)+' ชม.</div>' : '');
 
   // สถานะรถ
   const vcls = VEH_DOT[d.vehicleCode] || 'none';
@@ -292,7 +309,7 @@ function rowHtml(d){
   +   '<div class="mid" onclick="openSingleSheet(\''+esc(d.uid)+'\')">'
   +     '<div class="nm">'+esc(d.name||'(ไม่มีชื่อ)')+'</div>'
   +     '<div class="sub">'
-  +       '<span class="badge '+meta.cls+'">'+meta.em+' '+meta.label+esc(setTag)+'</span>'
+  +       '<span class="badge '+meta.cls+'">'+meta.em+' '+badgeTxt+'</span>'
   +       veh
   +     '</div>'
   +   '</div>'
