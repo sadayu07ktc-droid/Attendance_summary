@@ -154,7 +154,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 <div id="toast"></div>
 
 <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbw2DXaTVoX5cgUZjQrGlpx7tQ1-gwcYYB85eY8MElo2oaqBIxCsjVfL7yMiM8uuUw9YxA/exec';
+// 2026-10-16: สรุป + ตั้งสถานะ → Edge attendance (Supabase + GPS สด) · GAS เดิมอ่านชีตที่ไม่อัปเดตแล้ว ตัวเลขผิด
+const ATT_URL = 'https://abihhdjcrbvwlkzwvjio.supabase.co/functions/v1/attendance';
 // 🔧 ใส่ LIFF ID ของหน้านี้ (สร้างใหม่แล้วเอามาใส่ + เพิ่มคีย์ LIFF_ID_AttendSummary ในชีต LINE_OA ด้วย)
 const LIFF_ID = '2010274217-gPYFX8U7';
 
@@ -196,7 +197,7 @@ async function load(isRefresh){
   const rb = document.getElementById('btn-refresh');
   if(isRefresh){ rb.classList.add('spin','loading'); }
   try{
-    const res = await fetch(GAS_URL + '?action=getAttendanceSummary&userId=' + encodeURIComponent(ADMIN_UID) + '&t=' + Date.now());
+    const res = await fetch(ATT_URL + '?action=getAttendanceSummary&userId=' + encodeURIComponent(ADMIN_UID) + '&t=' + Date.now());
     const d = await res.json();
     if(!d.success){
       const msg = d.error==='unauthorized' ? 'หน้านี้สำหรับแอดมินเท่านั้น' : (d.error||'เกิดข้อผิดพลาด');
@@ -349,7 +350,7 @@ function openSheet(html){ document.getElementById('sheet-panel').innerHTML = htm
 function closeSheet(){ document.getElementById('sheet').classList.remove('show'); }
 
 async function post(payload){
-  const res = await fetch(GAS_URL, {
+  const res = await fetch(ATT_URL, {
     method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
     body: JSON.stringify(payload)
   });
